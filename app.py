@@ -4,6 +4,7 @@ from datetime import timedelta
 import uuid
 import sqlite3
 
+
 from database import get_db, init_db
 from models import *
 from auth import *
@@ -129,6 +130,7 @@ def create_shipment(shipment: ShipmentCreate, current_user = Depends(get_current
                 cursor.execute("INSERT INTO shipment_items (shipment_id, product_id, quantity) VALUES (?, ?, ?)", (shipment_id, product_id, item.quantity))
         
         conn.commit()
+        publish_mqqt_data("/REKSTI/shipment_code", {"shipment_id": shipment_id})
         result = get_shipment_by_code(shipment_code, conn)
         conn.close()
         
@@ -334,8 +336,9 @@ def get_notifications(current_user = Depends(get_current_user)):
         
         return notifications
 
-@app.get("/api/temperature")
-def get_temperature():
-        if latest_temp_data:
-                return latest_temp_data
+@app.get("/api/temperature/{shipment_id}")
+def get_temperature(shipment_id: int):
+        temp = get_temp(shipment_id)
+        if temp:
+                return temp
         return {"error": "No temperature data received yet"}
