@@ -79,7 +79,7 @@ def create_product(product: ProductCreate, current_user = Depends(get_current_ma
         conn = get_db()
         cursor = conn.cursor()
         
-        product_code = f"PROD-{uuid.uuid4().hex[:8].upper}"
+        product_code = f"PROD-{uuid.uuid4().hex[:8].upper()}"
         
         cursor.execute("""
                 INSERT INTO products (product_code, manufacturer_id, name, description, 
