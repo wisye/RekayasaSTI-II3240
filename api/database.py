@@ -13,6 +13,7 @@ def get_db() -> Connection:
 
 def init_db():
         conn = sqlite3.connect(DATABASE)
+        conn.execute("PRAGMA journal_mode=WAL")
         cursor = conn.cursor()
         
         # Check if table exists
