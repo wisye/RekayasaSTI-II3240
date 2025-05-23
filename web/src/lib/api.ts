@@ -1,3 +1,5 @@
+import { CreateProductData, CreateShipmentData } from "@/types";
+
 interface RegisterData {
   username: string;
   password: string;
@@ -64,6 +66,82 @@ export async function login(data: LoginData) {
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to login');
+  }
+
+  return response.json();
+}
+
+export async function getProducts() {
+  const response = await fetch(`${API_BASE_URL}/products`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch products');
+  }
+
+  return response.json();
+}
+
+export async function createProduct(data: CreateProductData) {
+  const response = await fetch(`${API_BASE_URL}/products`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create product');
+  }
+
+  return response.json();
+}
+
+export async function getShipments() {
+  const response = await fetch(`${API_BASE_URL}/shipments`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch shipments');
+  }
+
+  return response.json();
+}
+
+export async function createShipment(data: CreateShipmentData) {
+  const response = await fetch(`${API_BASE_URL}/shipments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create shipment');
+  }
+
+  return response.json();
+}
+
+export async function getRecentShipments() {
+  const response = await fetch(`${API_BASE_URL}/shipments/recent`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch recent shipments');
   }
 
   return response.json();
