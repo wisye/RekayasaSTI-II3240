@@ -15,7 +15,10 @@ const config = {
       textColor: {
         'primary': '#ffffff',
         'secondary': '#e2e8f0',
-      }
+      },
+      backdropBlur: {
+        'sm': '4px',
+      },
     },
   },
   plugins: [

@@ -1,16 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shipment } from '@/types';
-import Link from 'next/link';
-import { getRecentShipments } from '@/lib/api';
+import { UserCircleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
+import Calendar from '@/components/Calendar';
 import ShipmentDetail from '@/components/ShipmentDetail';
+import { Shipment } from '@/types';
+import { getRecentShipments } from '@/lib/api';
 
 export default function Dashboard() {
   const [recentShipments, setRecentShipments] = useState<Shipment[]>([]);
+  const [selectedDateShipments, setSelectedDateShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const { username } = useAuth();
 
   useEffect(() => {
     fetchRecentShipments();
@@ -22,155 +27,132 @@ export default function Dashboard() {
       setRecentShipments(data);
     } catch (err) {
       setError('Failed to load recent shipments');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-500">{error}</div>;
-
-  // Calculate metrics
-  const totalShipments = recentShipments.length;
-  const activeShipments = recentShipments.filter(s => s.status !== 'Delivered').length;
-  const constraintViolations = recentShipments.filter(s => s.constraints_violated).length;
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    const shipmentsOnDate = recentShipments.filter(shipment => 
+      new Date(shipment.shipping_date).toDateString() === date.toDateString()
+    );
+    setSelectedDateShipments(shipmentsOnDate);
+  };
 
   return (
-    <div className="py-6">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-
-        {/* Metrics */}
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Recent Shipments</dt>
-                    <dd className="text-lg font-medium text-gray-900">{totalShipments}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Active Shipments</dt>
-                    <dd className="text-lg font-medium text-gray-900">{activeShipments}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Constraint Violations</dt>
-                    <dd className="text-lg font-medium text-gray-900">{constraintViolations}</dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-xl font-medium text-purple-600">
+            Hello, {username}! 👋
+          </h1>
+          <p className="text-sm text-gray-500">
+            Good morning! Here are your recent shipments.
+          </p>
         </div>
+        <div>
+          <UserCircleIcon className="h-8 w-8 text-gray-400" />
+        </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="grid grid-cols-2 gap-8">
         {/* Recent Shipments */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Recent Shipments</h2>
-            <Link
-              href="/dashboard/shipments"
-              className="text-sm font-medium text-blue-600 hover:text-blue-500"
-            >
-              View all
-            </Link>
+        <div>
+          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 mb-4">
+            <h2 className="text-lg font-medium text-gray-900">
+              Recent Shipments
+            </h2>
           </div>
 
-          <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md">
-            <ul role="list" className="divide-y divide-gray-200">
+          {loading ? (
+            <p>Loading...</p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : recentShipments.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              Add new shipments to see them here.
+            </p>
+          ) : (
+            <div className="space-y-4">
               {recentShipments.map((shipment) => (
-                <li
+                <div
                   key={shipment.shipment_code}
                   onClick={() => setSelectedShipment(shipment)}
-                  className="hover:bg-gray-50 cursor-pointer"
+                  className="bg-white rounded-lg shadow p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
-                  <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="sm:flex">
-                        <p className="text-sm font-medium text-blue-600 truncate">
-                          {shipment.shipment_code}
-                        </p>
-                        <p className="mt-1 sm:mt-0 sm:ml-6 text-sm text-gray-500">
-                          to {shipment.recipient_name}
-                        </p>
-                      </div>
-                      <div className="ml-2 flex-shrink-0 flex">
-                        <span className={`
-                          px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                          ${shipment.constraints_violated
-                            ? 'bg-red-100 text-red-800'
-                            : shipment.status === 'Delivered'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }
-                        `}>
-                          {shipment.status}
-                        </span>
-                      </div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        No Pesanan: <span className="text-gray-900">{shipment.shipment_code}</span>
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {new Date(shipment.shipping_date).toLocaleDateString()}
+                      </p>
                     </div>
-                    <div className="mt-2 sm:flex sm:justify-between">
-                      <div className="sm:flex">
-                        <p className="flex items-center text-sm text-gray-500">
-                          Shipped on {new Date(shipment.shipping_date).toLocaleDateString()}
-                        </p>
-                      </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      <span className={`
+                        inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${shipment.status === 'Delivered' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                        }
+                      `}>
+                        {shipment.status}
+                      </span>
                       {shipment.constraints_violated && (
-                        <div className="mt-2 sm:mt-0">
-                          <span className="text-xs text-red-600">
-                            ⚠️ Constraint violation detected
-                          </span>
-                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Constraint Violated
+                        </span>
                       )}
                     </div>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Shipment Detail Modal */}
-        {selectedShipment && (
-          <ShipmentDetail
-            shipment={selectedShipment}
-            onClose={() => setSelectedShipment(null)}
+        {/* Calendar */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <Calendar 
+            onSelectDate={handleDateSelect}
+            shipments={recentShipments}
           />
-        )}
+          
+          {selectedDate && selectedDateShipments.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Shipments on {selectedDate.toLocaleDateString()}
+              </h3>
+              <div className="space-y-4">
+                {selectedDateShipments.map((shipment) => (
+                  <div
+                    key={shipment.shipment_code}
+                    onClick={() => setSelectedShipment(shipment)}
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                  >
+                    <p className="font-medium">{shipment.shipment_code}</p>
+                    <p className="text-sm text-gray-500">
+                      to {shipment.recipient_name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Shipment Detail Modal */}
+      {selectedShipment && (
+        <ShipmentDetail
+          shipment={selectedShipment}
+          onClose={() => setSelectedShipment(null)}
+        />
+      )}
     </div>
   );
 }
