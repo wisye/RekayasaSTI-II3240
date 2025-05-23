@@ -17,7 +17,8 @@ interface LoginData {
   password: string;
 }
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'http://103.59.160.119:3240/api';
 
 export async function register(data: RegisterData) {
   const registerData: RegisterRequestData = {
