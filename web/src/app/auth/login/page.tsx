@@ -19,19 +19,25 @@ export default function Login() {
 
     const formData = new FormData(e.currentTarget);
     const username = formData.get('username') as string;
-    
+
     try {
       const data = await login({
         username: username,
         password: formData.get('password') as string,
       });
-      
+
+      localStorage.setItem('auth_token', data.access_token);
+      localStorage.setItem('username', username);
+
       setToken(data.access_token);
       setUsername(username);
-      localStorage.setItem('username', username);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       router.push('/dashboard');
     } catch (err) {
-      setError('Failed to login');
+      console.error('Login error:', err);
+      setError('Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -43,7 +49,7 @@ export default function Login() {
       <div className="hidden md:flex md:w-1/2 bg-purple-500 text-white p-12 flex-col justify-center items-center rounded-r-[80px]">
         <h1 className="text-4xl font-bold mb-4">Hello, Welcome!</h1>
         <p className="text-lg mb-8">Don&apos;t have an account</p>
-        <Link 
+        <Link
           href="/auth/register"
           className="px-8 py-3 border-2 border-white rounded-full text-white hover:bg-white hover:text-purple-500 transition-colors"
         >
@@ -110,7 +116,7 @@ export default function Login() {
             {/* Mobile Registration Link */}
             <div className="md:hidden text-center">
               <p className="text-gray-400 mb-2">Don&apos;t have an account?</p>
-              <Link 
+              <Link
                 href="/auth/register"
                 className="text-purple-300 hover:text-purple-200"
               >

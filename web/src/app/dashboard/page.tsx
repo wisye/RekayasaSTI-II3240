@@ -8,6 +8,31 @@ import ShipmentDetail from '@/components/ShipmentDetail';
 import { Shipment } from '@/types';
 import { getRecentShipments } from '@/lib/api';
 
+const getShipmentStatus = (shipment: Shipment) => {
+  if (shipment.status === 'Delivered') {
+    return {
+      status: 'Delivered',
+      className: 'bg-green-100 text-green-800'
+    };
+  }
+
+  const shipmentDate = new Date(shipment.shipping_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (shipmentDate <= today) {
+    return {
+      status: 'Shipped',
+      className: 'bg-blue-100 text-blue-800'
+    };
+  }
+
+  return {
+    status: 'Prepared',
+    className: 'bg-yellow-100 text-yellow-800'
+  };
+};
+
 export default function Dashboard() {
   const [recentShipments, setRecentShipments] = useState<Shipment[]>([]);
   const [selectedDateShipments, setSelectedDateShipments] = useState<Shipment[]>([]);
@@ -34,7 +59,7 @@ export default function Dashboard() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    const shipmentsOnDate = recentShipments.filter(shipment => 
+    const shipmentsOnDate = recentShipments.filter(shipment =>
       new Date(shipment.shipping_date).toDateString() === date.toDateString()
     );
     setSelectedDateShipments(shipmentsOnDate);
@@ -95,12 +120,9 @@ export default function Dashboard() {
                     <div className="flex flex-col items-end space-y-2">
                       <span className={`
                         inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${shipment.status === 'Delivered' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                        }
+                        ${getShipmentStatus(shipment).className}
                       `}>
-                        {shipment.status}
+                        {getShipmentStatus(shipment).status}
                       </span>
                       {shipment.constraints_violated && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
@@ -117,11 +139,11 @@ export default function Dashboard() {
 
         {/* Calendar */}
         <div className="bg-white rounded-lg shadow p-6">
-          <Calendar 
+          <Calendar
             onSelectDate={handleDateSelect}
             shipments={recentShipments}
           />
-          
+
           {selectedDate && selectedDateShipments.length > 0 && (
             <div className="mt-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">

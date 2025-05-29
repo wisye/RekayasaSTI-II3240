@@ -8,6 +8,31 @@ import ShipmentForm from '@/components/ShipmentForm';
 import { Shipment } from '@/types';
 import { getShipments } from '@/lib/api';
 
+const getShipmentStatus = (shipment: Shipment) => {
+  if (shipment.status === 'Delivered') {
+    return {
+      status: 'Delivered',
+      className: 'bg-green-100 text-green-800'
+    };
+  }
+
+  const shipmentDate = new Date(shipment.shipping_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (shipmentDate <= today) {
+    return {
+      status: 'Shipped',
+      className: 'bg-blue-100 text-blue-800'
+    };
+  }
+
+  return {
+    status: 'Prepared',
+    className: 'bg-yellow-100 text-yellow-800'
+  };
+};
+
 export default function Shipments() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +63,7 @@ export default function Shipments() {
   };
 
   return (
-        <div className="p-8 relative">
+    <div className="p-8 relative">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -99,13 +124,10 @@ export default function Shipments() {
                   </div>
                   <div className="flex flex-col items-end space-y-2">
                     <span className={`
-                      inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                      ${shipment.status === 'Delivered' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                      }
-                    `}>
-                      {shipment.status}
+          inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+          ${getShipmentStatus(shipment).className}
+        `}>
+                      {getShipmentStatus(shipment).status}
                     </span>
                     {shipment.constraints_violated && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">

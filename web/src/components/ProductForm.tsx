@@ -2,33 +2,52 @@
 
 import { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { createProduct } from '@/lib/api';
 
 interface ProductFormProps {
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit?: (data: any) => void;
 }
 
 export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    
     const formData = new FormData(e.currentTarget);
     
     const data = {
       name: formData.get('name'),
       description: formData.get('description'),
-      product_code: formData.get('product_code'),
       min_temperature: Number(formData.get('min_temperature')),
       max_temperature: Number(formData.get('max_temperature')),
       min_humidity: Number(formData.get('min_humidity')),
       max_humidity: Number(formData.get('max_humidity')),
     };
 
-    await onSubmit(data);
-    setLoading(false);
+    try {
+      await createProduct(data);
+      if (onSubmit) {
+        await onSubmit(data);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Error creating product:', err);
+      setError('Failed to create product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const errorMessage = error && (
+    <div className="text-red-600 text-sm mt-2">
+      {error}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50">
@@ -58,18 +77,6 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
                 />
               </div>
 
-              <div>
-                <label htmlFor="product_code" className="block text-sm font-medium text-gray-700">
-                  Product Code
-                </label>
-                <input
-                  type="text"
-                  name="product_code"
-                  id="product_code"
-                  required
-                  className="mt-1 h-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-gray-900"
-                />
-              </div>
 
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">
@@ -147,6 +154,7 @@ export default function ProductForm({ onClose, onSubmit }: ProductFormProps) {
             </div>
 
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              {errorMessage}
               <button
                 type="button"
                 onClick={onClose}

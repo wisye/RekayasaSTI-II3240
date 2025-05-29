@@ -72,78 +72,92 @@ export async function login(data: LoginData) {
   return response.json();
 }
 
-export async function getProducts() {
-  const response = await fetch(`${API_BASE_URL}/products`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch products');
+export async function getAuthHeader() {
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    throw new Error('No authentication token found');
   }
-
-  return response.json();
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
 }
 
-export async function createProduct(data: CreateProductData) {
+export async function getProducts() {
+  try {
+    const headers = await getAuthHeader();
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      headers
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch products');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+export async function createProduct(productData: any) {
+  const headers = await getAuthHeader();
   const response = await fetch(`${API_BASE_URL}/products`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-    },
-    body: JSON.stringify(data)
+    headers,
+    body: JSON.stringify(productData)
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create product');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create product');
   }
 
   return response.json();
 }
+
 
 export async function getShipments() {
-  const response = await fetch(`${API_BASE_URL}/shipments`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch shipments');
+  try {
+    const headers = await getAuthHeader();
+    const response = await fetch(`${API_BASE_URL}/shipments`, {
+      headers
+    });
+    if (!response.ok) throw new Error('Failed to fetch shipments');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching shipments:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
-export async function createShipment(data: CreateShipmentData) {
+export async function createShipment(shipmentData: CreateShipmentData) {
+  const headers = await getAuthHeader();
   const response = await fetch(`${API_BASE_URL}/shipments`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-    },
-    body: JSON.stringify(data)
+    headers,
+    body: JSON.stringify(shipmentData)
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create shipment');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create shipment');
   }
 
   return response.json();
 }
 
 export async function getRecentShipments() {
-  const response = await fetch(`${API_BASE_URL}/shipments/recent`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recent shipments');
+  try {
+    const headers = await getAuthHeader();
+    const response = await fetch(`${API_BASE_URL}/shipments/recent`, {
+      headers
+    });
+    if (!response.ok) throw new Error('Failed to fetch recent shipments');
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching recent shipments:', error);
+    throw error;
   }
-
-  return response.json();
 }
