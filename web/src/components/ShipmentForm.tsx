@@ -8,6 +8,7 @@ import { Product, CreateShipmentData, CreateShipmentItem } from '@/types';
 interface SelectedProduct {
   product: Product;
   quantity: number;
+  espId: string;
 }
 
 interface ShipmentFormProps {
@@ -15,7 +16,6 @@ interface ShipmentFormProps {
   onSubmit?: (data: CreateShipmentData) => void;
 }
 
-// Common CSS classes for form elements
 const inputClassName = "mt-1 block w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 text-gray-900";
 const labelClassName = "block text-sm font-medium text-gray-800";
 
@@ -24,7 +24,6 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
   const [error, setError] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
-  const [espId, setEspId] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
@@ -35,7 +34,11 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
       const data = await getProducts();
       setProducts(data);
       if (data.length > 0) {
-        setSelectedProducts([{ product: data[0], quantity: 1 }]);
+        setSelectedProducts([{ 
+          product: data[0], 
+          quantity: 1,
+          espId: '' 
+        }]);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -45,7 +48,11 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
 
   const handleAddProduct = () => {
     if (products.length > 0) {
-      setSelectedProducts([...selectedProducts, { product: products[0], quantity: 1 }]);
+      setSelectedProducts([...selectedProducts, { 
+        product: products[0], 
+        quantity: 1,
+        espId: ''
+      }]);
     }
   };
 
@@ -65,6 +72,12 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
   const handleQuantityChange = (index: number, quantity: number) => {
     const newProducts = [...selectedProducts];
     newProducts[index] = { ...newProducts[index], quantity };
+    setSelectedProducts(newProducts);
+  };
+
+  const handleEspIdChange = (index: number, espId: string) => {
+    const newProducts = [...selectedProducts];
+    newProducts[index] = { ...newProducts[index], espId };
     setSelectedProducts(newProducts);
   };
 
@@ -154,19 +167,6 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
               </div>
             </div>
 
-            {/* ESP ID */}
-            <div>
-              <label htmlFor="esp_id" className={labelClassName}>ESP ID</label>
-              <input
-                type="text"
-                id="esp_id"
-                value={espId}
-                onChange={(e) => setEspId(e.target.value)}
-                placeholder="Enter ESP ID"
-                className={inputClassName}
-              />
-            </div>
-
             {/* Shipping Date */}
             <div>
               <label htmlFor="shipping_date" className={labelClassName}>Shipping Date</label>
@@ -195,8 +195,8 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
 
               <div className="space-y-3">
                 {selectedProducts.map((sp, index) => (
-                  <div key={index} className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg">
-                    <div className="flex-grow">
+                  <div key={index} className="grid grid-cols-12 gap-4 bg-gray-50 p-4 rounded-lg items-center">
+                    <div className="col-span-5">
                       <select
                         value={sp.product.id}
                         onChange={(e) => handleProductChange(index, Number(e.target.value))}
@@ -209,7 +209,16 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
                         ))}
                       </select>
                     </div>
-                    <div className="w-32">
+                    <div className="col-span-3">
+                      <input
+                        type="text"
+                        placeholder="ESP ID"
+                        value={sp.espId}
+                        onChange={(e) => handleEspIdChange(index, e.target.value)}
+                        className={inputClassName}
+                      />
+                    </div>
+                    <div className="col-span-3">
                       <input
                         type="number"
                         min="1"
@@ -218,13 +227,15 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
                         className={inputClassName}
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveProduct(index)}
-                      className="p-2 text-gray-400 hover:text-red-500"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
+                    <div className="col-span-1 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProduct(index)}
+                        className="p-2 text-gray-400 hover:text-red-500"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

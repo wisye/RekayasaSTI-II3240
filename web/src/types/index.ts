@@ -3,6 +3,10 @@ export interface ShipmentItem {
   product_name: string;
   quantity: number;
   constraints_violated: boolean;
+  // min_temperature: number;
+  // max_temperature: number;
+  // min_humidity: number;
+  // max_humidity: number;
 }
 
 export interface Shipment {
