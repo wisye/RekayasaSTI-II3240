@@ -80,6 +80,10 @@ class NFCTagResponse(BaseModel):
         manufacturer: Optional[str] = None
         shipment_code: Optional[str] = None
 
+class NotificationCreate(BaseModel):
+        shipment_code: str
+        message: str
+
 class NotificationResponse(BaseModel):
         id: int
         shipment_code: str

@@ -334,6 +334,51 @@ def get_orders_by_date(date: str, current_user = Depends(get_current_recipient))
         conn.close()
         return orders
 
+@app.post("/api/notifications", response_model=NotificationResponse)
+def create_notification(notification: NotificationCreate, current_user = Depends(get_current_user)):
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id, manufacturer_id, recipient_id FROM shipments WHERE shipment_code = ?", 
+                       (notification.shipment_code,))
+        shipment = cursor.fetchone()
+        
+        if not shipment:
+                conn.close()
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        
+        if current_user.role == 'manufacturer' and shipment['manufacturer_id'] != current_user.user_id:
+                conn.close()
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        
+        if current_user.role == 'manufacturer':
+                user_id = shipment['recipient_id']
+                if not user_id:
+                        conn.close()
+                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+        
+        else:
+                user_id = shipment['manufacturer_id']
+        
+        cursor.execute("""
+            INSERT INTO notifications (user_id, shipment_id, message, read)
+            VALUES (?, ?, ?, 0)
+        """, (user_id, shipment['id'], notification.message))
+        
+        conn.commit()
+        
+        cursor.execute("""
+                SELECT n.*, s.shipment_code
+                FROM notifications n
+                JOIN shipments s ON n.shipment_id = s.id
+                WHERE n.id = last_insert_rowid()
+        """)
+        
+        notification_data = cursor.fetchone()
+        conn.close()
+        
+        return dict(notification_data)  
+
 @app.get("/api/notifications", response_model=list[NotificationResponse])
 def get_notifications(current_user = Depends(get_current_user)):
         conn = get_db()
