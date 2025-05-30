@@ -385,14 +385,18 @@ def get_notifications(current_user = Depends(get_current_user)):
         cursor = conn.cursor()
         
         cursor.execute("""
-                SELECT n.*, s.shipment_code
+                SELECT n.id, n.user_id, n.shipment_id, n.message, n.read, n.created_at, s.shipment_code
                 FROM notifications n
-                JOIN shipments s ON n.shipment_id = s.id
+                LEFT JOIN shipments s ON n.shipment_id = s.id
                 WHERE n.user_id = ?
                 ORDER BY n.created_at DESC
         """, (current_user.user_id,))
         
-        notifications = [dict(row) for row in cursor.fetchall()]
+        notifications = []
+        for row in cursor.fetchall():
+                notification_dict = dict(row)
+                notification_dict["read"] = bool(notification_dict["read"])
+                notifications.append(notification_dict)
         conn.close()
         
         return notifications
