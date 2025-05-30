@@ -377,7 +377,15 @@ def create_notification(notification: NotificationCreate, current_user = Depends
         notification_data = cursor.fetchone()
         conn.close()
         
-        return dict(notification_data)  
+        return {
+                "id": notification_data["id"],
+                "user_id": notification_data["user_id"],
+                "shipment_id": notification_data["shipment_id"],
+                "message": str(notification_data["message"]),
+                "read": bool(notification_data["read"]),
+                "created_at": str(notification_data["created_at"]),
+                "shipment_code": str(notification_data["shipment_code"])
+        }
 
 @app.get("/api/notifications", response_model=list[NotificationResponse])
 def get_notifications(current_user = Depends(get_current_user)):
