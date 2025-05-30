@@ -10,8 +10,18 @@ interface ShipmentDetailProps {
   onClose: () => void;
 }
 
+function isShipped(shippingDate: string): boolean {
+  const shipmentDate = new Date(shippingDate);
+  const currentDate = new Date();
+  // Reset time portion for date comparison
+  shipmentDate.setHours(0, 0, 0, 0);
+  currentDate.setHours(0, 0, 0, 0);
+  return shipmentDate < currentDate;
+}
+
 export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProps) {
   const { data: tempData, error: tempError } = useTemperatureCheck(shipment.shipment_code);
+  const displayStatus = isShipped(shipment.shipping_date) ? 'Shipped' : shipment.status;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -52,8 +62,8 @@ export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProp
           <div className="p-6 space-y-6">
             {/* Status Badges */}
             <div className="flex justify-between items-center">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(shipment.status)}`}>
-                {shipment.status}
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(displayStatus)}`}>
+                {displayStatus}
               </span>
               {shipment.constraints_violated && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
