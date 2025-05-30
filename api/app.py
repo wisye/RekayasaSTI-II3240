@@ -361,14 +361,14 @@ def create_notification(notification: NotificationCreate, current_user = Depends
                 user_id = shipment['manufacturer_id']
         
         cursor.execute("""
-            INSERT INTO notifications (user_id, shipment_id, message, read)
-            VALUES (?, ?, ?, 0)
+                INSERT INTO notifications (user_id, shipment_id, message, read)
+                VALUES (?, ?, ?, 0)
         """, (user_id, shipment['id'], notification.message))
         
         conn.commit()
         
         cursor.execute("""
-                SELECT n.*, s.shipment_code
+                SELECT n.id, n.user_id, n.shipment_id, n.message, n.read, n.created_at, s.shipment_code
                 FROM notifications n
                 JOIN shipments s ON n.shipment_id = s.id
                 WHERE n.id = last_insert_rowid()
