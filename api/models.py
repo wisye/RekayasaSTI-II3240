@@ -87,7 +87,7 @@ class NotificationCreate(BaseModel):
 class NotificationResponse(BaseModel):
         id: int
         user_id: int
-        shipment_id: str
+        shipment_id: int
         message: str
         read: bool
         created_at: datetime
