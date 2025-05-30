@@ -154,12 +154,31 @@ export default function Dashboard() {
                   <div
                     key={shipment.shipment_code}
                     onClick={() => setSelectedShipment(shipment)}
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                    className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                   >
-                    <p className="font-medium">{shipment.shipment_code}</p>
-                    <p className="text-sm text-gray-500">
-                      to {shipment.recipient_name}
-                    </p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          No Pesanan: <span>{shipment.shipment_code}</span>
+                        </p>
+                        <p className="text-sm text-gray-700 mt-1">
+                          to: {shipment.recipient_name}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <span className={`
+                  inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  ${getShipmentStatus(shipment).className}
+                `}>
+                          {getShipmentStatus(shipment).status}
+                        </span>
+                        {shipment.constraints_violated && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Constraint Violated
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

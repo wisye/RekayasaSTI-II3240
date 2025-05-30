@@ -84,73 +84,72 @@ def setup_mqtt():
 def publish_mqqt_data(topic: str, payload: dict):
         client.publish(topic=topic, payload=json.dumps(payload))
         
-def get_temp(shipment_id=None, limit=1):
-        """
-        Get temperature data from the database
+def get_temp(shipment_code=None, limit=1):
+    """
+    Get temperature data from the database using shipment_code
+    
+    Args:
+            shipment_code: Optional code to filter by specific shipment
+            limit: Number of records to return (default 1 for latest only)
+            
+    Returns:
+            Dictionary or list of temperature readings
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        if shipment_code is not None:
+            # Get readings for specific shipment using shipment_code
+            cursor.execute("""
+                SELECT tl.*, s.shipment_code, s.constraints_violated
+                FROM temperature_logs tl
+                JOIN shipments s ON tl.shipment_id = s.id
+                WHERE s.shipment_code = ?
+                ORDER BY tl.timestamp DESC
+                LIMIT ?
+            """, (shipment_code, limit))
+        else:
+            # Get latest reading for each shipment
+            cursor.execute("""
+                SELECT tl.*, s.shipment_code, s.constraints_violated
+                FROM temperature_logs tl
+                JOIN (
+                    SELECT shipment_id, MAX(timestamp) as max_ts
+                    FROM temperature_logs
+                    GROUP BY shipment_id
+                ) latest ON tl.shipment_id = latest.shipment_id AND tl.timestamp = latest.max_ts
+                JOIN shipments s ON tl.shipment_id = s.id
+            """)
+            
+        rows = cursor.fetchall()
         
-        Args:
-                shipment_id: Optional ID to filter by specific shipment
-                limit: Number of records to return (default 1 for latest only)
-                
-        Returns:
-                Dictionary or list of temperature readings
-        """
-        conn = get_db()
-        cursor = conn.cursor()
+        if not rows:
+            return {}
         
-        try:
-                if shipment_id is not None:
-                # Get readings for specific shipment
-                        cursor.execute("""
-                                SELECT tl.*, s.shipment_code
-                                FROM temperature_logs tl
-                                JOIN shipments s ON tl.shipment_id = s.id
-                                WHERE tl.shipment_id = ?
-                                ORDER BY tl.timestamp DESC
-                                LIMIT ?
-                        """, (shipment_id, limit))
-                else:
-                # Get latest reading for each shipment
-                        cursor.execute("""
-                                SELECT tl.*, s.shipment_code
-                                FROM temperature_logs tl
-                                JOIN (
-                                SELECT shipment_id, MAX(timestamp) as max_ts
-                                FROM temperature_logs
-                                GROUP BY shipment_id
-                                ) latest ON tl.shipment_id = latest.shipment_id AND tl.timestamp = latest.max_ts
-                                JOIN shipments s ON tl.shipment_id = s.id
-                        """)
-                        
-                rows = cursor.fetchall()
-                
-                if not rows:
-                # If no database records, fall back to in-memory data
-                        return latest_temp_data.get(str(shipment_id), {}) if shipment_id else latest_temp_data
-                
-                if shipment_id is not None and limit == 1:
-                # Return single reading for specific shipment
-                        if rows:
-                                row = rows[0]
-                                return {
-                                "shipment_id": row["shipment_id"],
-                                "shipment_code": row["shipment_code"],
-                                "temperature": row["temperature"],
-                                "humidity": row["humidity"],
-                                "timestamp": row["timestamp"]
-                                }
-                        return {}
-                else:
-                # Return list of readings
-                        results = []
-                        for row in rows:
-                                results.append({
-                                "shipment_id": row["shipment_id"],
-                                "shipment_code": row["shipment_code"],
-                                "temperature": row["temperature"],
-                                "humidity": row["humidity"],
-                                "timestamp": row["timestamp"]
-                                })
-                        return results
-        finally:
-                conn.close()
+        if shipment_code is not None and limit == 1:
+            # Return single reading for specific shipment
+            if rows:
+                row = rows[0]
+                return {
+                    "shipment_code": row["shipment_code"],
+                    "temperature": row["temperature"],
+                    "humidity": row["humidity"],
+                    "timestamp": row["timestamp"],
+                    "constraints_violated": row["constraints_violated"]
+                }
+            return {}
+        else:
+            # Return list of readings
+            results = []
+            for row in rows:
+                results.append({
+                    "shipment_code": row["shipment_code"],
+                    "temperature": row["temperature"],
+                    "humidity": row["humidity"],
+                    "timestamp": row["timestamp"],
+                    "constraints_violated": row["constraints_violated"]
+                })
+            return results
+    finally:
+        conn.close()

@@ -3,6 +3,7 @@
 import { Shipment, ShipmentItem } from '@/types';
 import { useEffect } from 'react';
 import { XMarkIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { useTemperatureCheck } from '@/hooks/useTemperatureCheck';
 
 interface ShipmentDetailProps {
   shipment: Shipment;
@@ -10,6 +11,8 @@ interface ShipmentDetailProps {
 }
 
 export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProps) {
+  const { data: tempData, error: tempError } = useTemperatureCheck(shipment.shipment_code);
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -57,6 +60,35 @@ export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProp
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                   Constraint Violated
                 </span>
+              )}
+            </div>
+
+            {/* Temperature Monitoring */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-500 mb-3">Environmental Monitoring</h4>
+              {tempError ? (
+                <p className="text-red-600 text-sm">{tempError}</p>
+              ) : !tempData ? (
+                <p className="text-gray-500 text-sm">Loading temperature data...</p>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Temperature: <span className="font-medium">{tempData.temperature}°C</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Humidity: <span className="font-medium">{tempData.humidity}%</span>
+                    </p>
+                  </div>
+                  {tempData.constraints_violated && (
+                    <div className="mt-2 flex items-center text-red-600">
+                      <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+                      <span className="text-sm font-medium">
+                        Temperature or humidity constraints violated
+                      </span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 

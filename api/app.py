@@ -352,9 +352,9 @@ def get_notifications(current_user = Depends(get_current_user)):
         
         return notifications
 
-@app.get("/api/temperature/{shipment_id}")
-def get_temperature(shipment_id: int):
-        temp = get_temp(shipment_id)
-        if temp:
-                return temp
-        return {"error": "No temperature data received yet"}
+@app.get("/api/temperature/{shipment_code}")
+def get_temperature(shipment_code: str):
+    temp = get_temp(shipment_code)
+    if temp:
+        return temp
+    return {"error": "No temperature data received yet"}

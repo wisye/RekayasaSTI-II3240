@@ -24,6 +24,7 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
   const [error, setError] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  const [espId, setEspId] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
@@ -151,6 +152,19 @@ export default function ShipmentForm({ onClose, onSubmit }: ShipmentFormProps) {
                   className={`${inputClassName} h-24`}
                 />
               </div>
+            </div>
+
+            {/* ESP ID */}
+            <div>
+              <label htmlFor="esp_id" className={labelClassName}>ESP ID</label>
+              <input
+                type="text"
+                id="esp_id"
+                value={espId}
+                onChange={(e) => setEspId(e.target.value)}
+                placeholder="Enter ESP ID"
+                className={inputClassName}
+              />
             </div>
 
             {/* Shipping Date */}
