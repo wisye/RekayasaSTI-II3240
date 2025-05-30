@@ -13,7 +13,7 @@ function isShipped(shippingDate: string): boolean {
   // Reset time portion for date comparison
   shipmentDate.setHours(0, 0, 0, 0);
   currentDate.setHours(0, 0, 0, 0);
-  return shipmentDate <= currentDate;
+  return shipmentDate < currentDate; // Changed from <= to <
 }
 
 export default function Reports() {
@@ -45,7 +45,6 @@ export default function Reports() {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="p-8">
