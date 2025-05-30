@@ -13,6 +13,17 @@ interface ShipmentDetailProps {
 export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProps) {
   const { data: tempData, error: tempError } = useTemperatureCheck(shipment.shipment_code);
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Delivered':
+        return 'bg-green-100 text-green-800';
+      case 'Shipped':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -22,10 +33,7 @@ export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProp
 
   return (
     <div className="fixed inset-0 z-50">
-      <div 
-        className="absolute inset-0 backdrop-blur-sm bg-white/30"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 backdrop-blur-sm bg-white/30" onClick={onClose} />
 
       <div className="relative flex items-center justify-center min-h-screen p-4">
         <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
@@ -36,91 +44,75 @@ export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProp
               </h3>
               <p className="text-sm text-gray-500">{shipment.shipment_code}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-            >
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
               <XMarkIcon className="h-5 w-5 text-gray-400" />
             </button>
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Status */}
-            <div className="flex items-center space-x-4">
-              <span className={`
-                inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                ${shipment.status === 'Delivered' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-                }
-              `}>
+            {/* Status Badges */}
+            <div className="flex justify-between items-center">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(shipment.status)}`}>
                 {shipment.status}
               </span>
               {shipment.constraints_violated && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  Constraint Violated
+                  <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
+                  Constraints Violated
                 </span>
               )}
             </div>
 
-            {/* Temperature Monitoring */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-500 mb-3">Environmental Monitoring</h4>
-              {tempError ? (
-                <p className="text-red-600 text-sm">{tempError}</p>
-              ) : !tempData ? (
-                <p className="text-gray-500 text-sm">Loading temperature data...</p>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
-                      Temperature: <span className="font-medium">{tempData.temperature}°C</span>
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Humidity: <span className="font-medium">{tempData.humidity}%</span>
-                    </p>
-                  </div>
-                  {tempData.constraints_violated && (
-                    <div className="mt-2 flex items-center text-red-600">
-                      <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-                      <span className="text-sm font-medium">
-                        Temperature or humidity constraints violated
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Items */}
+            {/* Items with Environmental Monitoring */}
             <div>
               <h4 className="text-sm font-medium text-gray-500 mb-3">Items</h4>
               <div className="bg-gray-50 rounded-lg divide-y divide-gray-200">
                 {shipment.items.map((item: ShipmentItem) => (
                   <div key={item.product_id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {item.product_name}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          Quantity: {item.quantity}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Product ID: {item.product_id}
-                        </p>
-                      </div>
-                      <div className="flex items-center">
-                        {item.constraints_violated ? (
+                    <div className="space-y-4">
+                      {/* Item Details */}
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {item.product_name}
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            Quantity: {item.quantity}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Product ID: {item.product_id}
+                          </p>
+                        </div>
+                        {shipment.constraints_violated && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                             Constraints Violated
                           </span>
+                        )}
+                      </div>
+
+                      {/* Environmental Monitoring per Item */}
+                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                        <h5 className="text-xs font-medium text-gray-500 mb-2">Environmental Data</h5>
+                        {tempError ? (
+                          <p className="text-red-600 text-sm">{tempError}</p>
+                        ) : !tempData ? (
+                          <p className="text-gray-500 text-sm">Loading data...</p>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircleIcon className="h-4 w-4 mr-1" />
-                            Normal
-                          </span>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-gray-500">Temperature</p>
+                              <span className="text-sm text-gray-600">
+                                {tempData.temperature}°C
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Humidity</p>
+                              <span className="text-sm text-gray-600">
+                                {tempData.humidity}%
+                              </span>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -128,18 +120,6 @@ export default function ShipmentDetail({ shipment, onClose }: ShipmentDetailProp
                 ))}
               </div>
             </div>
-
-            {/* Additional Info */}
-            {shipment.additional_info && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">
-                  Additional Information
-                </h4>
-                <p className="text-sm text-gray-700">
-                  {shipment.additional_info}
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
