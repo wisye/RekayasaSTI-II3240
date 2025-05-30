@@ -16,6 +16,7 @@ const navigation = [
   { name: 'DASHBOARD', href: '/dashboard', icon: Squares2X2Icon },
   { name: 'SHIPMENTS', href: '/dashboard/shipments', icon: ClipboardDocumentListIcon },
   { name: 'PRODUCTS', href: '/dashboard/products', icon: BeakerIcon },
+  { name: 'REPORTS', href: '/dashboard/reports', icon: DocumentTextIcon },
 ];
 
 export default function Sidebar() {
