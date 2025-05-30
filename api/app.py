@@ -387,7 +387,7 @@ def get_notifications(current_user = Depends(get_current_user)):
         cursor.execute("""
                 SELECT n.id, n.user_id, n.shipment_id, n.message, n.read, n.created_at, s.shipment_code
                 FROM notifications n
-                LEFT JOIN shipments s ON n.shipment_id = s.id
+                JOIN shipments s ON n.shipment_id = s.id
                 WHERE n.user_id = ?
                 ORDER BY n.created_at DESC
         """, (current_user.user_id,))
