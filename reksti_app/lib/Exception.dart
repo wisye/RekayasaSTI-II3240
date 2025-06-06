@@ -1,8 +1,6 @@
-// lib/core/errors/exceptions.dart
-
 class ServerException implements Exception {
   final String message;
-  final int? statusCode; // Optional: to store the HTTP status code
+  final int? statusCode;
 
   ServerException({required this.message, this.statusCode});
 

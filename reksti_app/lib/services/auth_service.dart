@@ -1,16 +1,14 @@
 // lib/features/auth/services/auth_service.dart
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io'; // For SocketException
+import 'dart:io';
 import 'package:reksti_app/Exception.dart';
 import 'package:reksti_app/services/token_service.dart';
 
 class AuthService {
   //'http://103.59.160.119:3240/api'
 
-  // This is your postData function, now as a method of AuthService
   Future<String> loginUser(String username, String password) async {
-    // Renamed for clarity
     final url = Uri.parse('http://103.59.160.119:3240/api/login');
     final Map<String, String> fields = {
       'username': username,
@@ -27,24 +25,20 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('Login successful: ${response.body}');
 
-        final responseData =
-            json.decode(response.body)
-                as Map<String, dynamic>; // Return decoded data
+        final responseData = json.decode(response.body) as Map<String, dynamic>;
         final String? accessToken = responseData['access_token'] as String?;
         final String? tokenType = responseData['token_type'] as String?;
 
         if (accessToken != null && tokenType != null) {
-          // 3. Save the token
           final TokenStorageService tokenStorage = TokenStorageService();
           await tokenStorage.saveToken(accessToken, tokenType);
-          await tokenStorage.saveUsername(username); // Add this
+          await tokenStorage.saveUsername(username);
           print('Token saved successfully!');
         } else {
-          // Handle cases where token or type might be missing in a successful response
           print(
             'Error: Access token or token type is missing in the response.',
           );
-          // You might want to throw an exception here or handle it as a login failure
+
           throw ServerException(
             message: 'Token data missing in server response.',
           );
@@ -52,23 +46,20 @@ class AuthService {
         return "ok";
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         print('Login failed: ${response.statusCode} - ${response.body}');
-        // Consider throwing a custom exception or returning a specific error object
+
         final errorData = json.decode(response.body);
         throw AuthenticationException(
           message: errorData['detail'] ?? 'Invalid credentials.',
         );
       } else {
         print('Login failed: ${response.statusCode} - ${response.body}');
-        final errorData = json.decode(
-          response.body,
-        ); // Attempt to parse error message from server
+        final errorData = json.decode(response.body);
         throw ServerException(
           message: errorData['detail'] ?? 'An error occurred on the server.',
           statusCode: response.statusCode,
         );
       }
     } on SocketException {
-      // Network-related error (no internet, server down)
       print(
         'Network error during login: No Internet connection or server unreachable.',
       );
@@ -78,14 +69,13 @@ class AuthService {
       );
     } catch (e) {
       print('Error making POST request: $e');
-      // Consider throwing a custom exception
+
       throw ServerException(
         message: 'An unexpected error occurred: ${e.toString()}',
       );
     }
   }
 
-  // You could add your registerUser API call here too
   Future<Map<String, dynamic>?> registerUser(
     String username,
     String email,
@@ -109,9 +99,7 @@ class AuthService {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
         print('Registration failed: ${response.statusCode} ${response.body}');
-        final errorData = json.decode(
-          response.body,
-        ); // Attempt to parse error message from server
+        final errorData = json.decode(response.body);
         throw ServerException(
           message: errorData['detail'] ?? 'An error occurred on the server.',
           statusCode: response.statusCode,

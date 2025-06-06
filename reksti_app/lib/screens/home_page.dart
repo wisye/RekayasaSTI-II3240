@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:provider/provider.dart';
 import 'package:reksti_app/screens/historipesanan_page.dart';
+import 'package:reksti_app/screens/historidetail_page.dart';
+import 'package:reksti_app/screens/notification_page.dart';
 import 'package:reksti_app/screens/scan_page.dart';
 import 'package:reksti_app/screens/profile_page.dart';
 import 'package:reksti_app/services/logic_service.dart';
 import 'package:reksti_app/model/Shipment.dart';
-import 'package:reksti_app/Exception.dart';
+import 'package:reksti_app/user_provider.dart';
 import 'package:reksti_app/services/token_service.dart';
 
-// Placeholder data for products
 class Product {
   final String name;
   final String imagePath;
@@ -23,7 +26,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _bottomNavIndex = 0; // To track selected bottom nav item
+  int _bottomNavIndex = 0;
   String? _displayedUsername;
   bool _isLoadingOrders = true;
   bool _isLoadingUsername = true;
@@ -36,7 +39,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _handleLoadOrders(); // Call the method to load and process orders
+    _handleLoadOrders();
   }
 
   Future<void> _handleLoadOrders() async {
@@ -44,7 +47,7 @@ class _HomePageState extends State<HomePage> {
     if (!mounted) return;
     setState(() {
       _isLoadingOrders = true;
-      _displayedUsername = username ?? "Default"; // Default if not found
+      _displayedUsername = username;
       _isLoadingUsername = false;
       _orderErrorMessage = '';
     });
@@ -67,20 +70,17 @@ class _HomePageState extends State<HomePage> {
         _isLoadingOrders = false;
       });
     } catch (e) {
-      if (!mounted) return; // Check mounted again after await
+      if (!mounted) return;
       setState(() {
         _orderErrorMessage = "Gagal memuat pesanan: ${e.toString()}";
         _isLoadingOrders = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(' Get Order Failed: ${e.toString()}'),
-        ), // Use e.toString()
+        SnackBar(content: Text(' Get Order Failed: ${e.toString()}')),
       );
     }
   }
 
-  // Placeholder widget for image assets
   Widget _buildImagePlaceholder({
     double? width,
     double? height,
@@ -100,33 +100,31 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+
+    final userProvider = Provider.of<UserProvider>(context);
+
     return Scaffold(
-      backgroundColor: Color(0xFFFFFFFF), // Light background color
+      backgroundColor: Color(0xFFFFFFFF),
       body: Stack(
-        // Stack is the direct child of the Scaffold's body
         children: <Widget>[
-          // 1. Your Decorative Background Image (Bottom Layer)
           Positioned(
-            top: 0, // Align to the top
-            left: 0, // Align to the left
+            top: 0,
+            left: 0,
             child: Opacity(
-              // Optional: if you want it to be slightly transparent
-              opacity: 0.5, // Adjust opacity value (0.0 to 1.0)
+              opacity: 0.5,
               child: Image.asset(
-                'assets/images/home_img1.png', // YOUR IMAGE PATH
-                width: screenSize.width * 0.6, // Example: 60% of screen width
-                // height: screenSize.height * 0.4, // Example: 40% of screen height
+                'assets/images/home_img1.png',
+                width: screenSize.width * 0.6,
+
                 fit: BoxFit.contain,
                 alignment: Alignment.topLeft,
                 errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox.shrink(); // Don't show anything if image fails to load
+                  return const SizedBox.shrink();
                 },
               ),
             ),
           ),
 
-          // 2. Your Main Page Content, wrapped in SafeArea (Top Layer)
-          // This SafeArea is now correctly placed as a child of the Stack
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
@@ -137,17 +135,18 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Assuming these methods are defined in your State class
-                    _buildTopHeader(),
+                    _buildTopHeader(
+                      userProvider.isLoadingProfile,
+                      userProvider.profileRecipientName,
+                      userProvider.profileImageFile,
+                    ),
                     const SizedBox(height: 25),
                     _buildWelcomeSection(),
                     const SizedBox(height: 25),
                     _buildHistoryCard(),
                     const SizedBox(height: 30),
                     _buildTodayOrdersSection(),
-                    const SizedBox(
-                      height: 20,
-                    ), // Space for bottom nav bar if content is short
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -155,12 +154,20 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar:
-          _buildBottomNavigationBar(), // Correctly placed as a property of Scaffold
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _buildTopHeader() {
+  Widget _buildTopHeader(
+    bool isLoading,
+    String? recipientName,
+    File? profileImageFile,
+  ) {
+    String avatarLetter =
+        isLoading || recipientName == null || recipientName.isEmpty
+            ? "X"
+            : recipientName[0].toUpperCase();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -181,20 +188,33 @@ class _HomePageState extends State<HomePage> {
                 size: 28,
               ),
 
-              // onPressed: () { /* TODO: Notification action */ },
-              // OR using an image asset:
-              // child: Image.asset('assets/images/icon_bell.png', width: 28, height: 28),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NotificationPage()),
+                );
+              },
             ),
             const SizedBox(width: 10),
             CircleAvatar(
               radius: 20,
-              backgroundColor: Colors.grey[300],
-              child: Icon(Icons.person, color: Colors.grey[700]),
+              backgroundColor: Colors.deepPurple[400],
+              backgroundImage:
+                  profileImageFile != null && profileImageFile.existsSync()
+                      ? FileImage(profileImageFile)
+                      : null,
+              child:
+                  profileImageFile == null
+                      ? Text(
+                        avatarLetter,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                      : null,
             ),
-
-            // User Profile Avatar
-            // IMPORTANT: Replace with your user profile image
           ],
         ),
       ],
@@ -218,20 +238,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Text(
-              _displayedUsername ??
-                  "Pengguna", // Replace with dynamic data if needed
+              _displayedUsername ?? "Pengguna",
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ],
         ),
-        // Waving Hand Image
-        // IMPORTANT: Replace with your waving hand image/emoji
-        // For example, an Image.asset or a Text widget with an emoji
-        // Image.asset('assets/images/waving_hand.png', width: 40, height: 40),
-        Text(
-          '👋', // Emoji placeholder
-          style: TextStyle(fontSize: 36),
-        ),
+
+        Text('👋', style: TextStyle(fontSize: 36)),
       ],
     );
   }
@@ -263,7 +276,7 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               Expanded(
-                flex: 3, // Give more space to text content
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -313,23 +326,20 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              const Spacer(
-                flex: 1,
-              ), // Spacer to push illustration to the right if needed
+              const Spacer(flex: 1),
             ],
           ),
           Positioned(
-            right: -20, // Adjust as needed to position illustration
+            right: -20,
             top: -10,
             bottom: -10,
-            width: MediaQuery.of(context).size.width * 0.25, // Adjust width
+            width: MediaQuery.of(context).size.width * 0.25,
             child: Opacity(
-              opacity:
-                  0.8, // Illustration seems a bit transparent or softly blended
-              // IMPORTANT: Replace with your history card illustration
+              opacity: 0.8,
+
               child: Image.asset(
                 'assets/images/home_img.png',
-                fit: BoxFit.contain, // or BoxFit.fitHeight
+                fit: BoxFit.contain,
                 errorBuilder:
                     (context, error, stacktrace) =>
                         _buildImagePlaceholder(icon: Icons.medical_services),
@@ -418,67 +428,78 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildProductCard(ShipmentItem item) {
-    return Card(
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Image.asset(
-                  item.imagePath,
-                  fit: BoxFit.contain,
-                  errorBuilder:
-                      (context, error, stacktrace) =>
-                          _buildImagePlaceholder(icon: Icons.medication),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HistoriDetailPage(item: item),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Image.asset(
+                    item.imagePath,
+                    fit: BoxFit.contain,
+                    errorBuilder:
+                        (context, error, stacktrace) =>
+                            _buildImagePlaceholder(icon: Icons.medication),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              item.productName,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+              const SizedBox(height: 6),
+              Text(
+                item.productName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              "Qty: ${item.quantity}",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-            ),
-          ],
+              Text(
+                "Qty: ${item.quantity}",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // --- DYNAMIC CUSTOM BOTTOM NAVIGATION BAR ---
   Widget _buildBottomNavigationBar() {
-    const double barHeight = 160; // Adjust to the actual height of your images
+    const double barHeight = 150;
     String currentNavBarImage;
 
     switch (_bottomNavIndex) {
-      case 0: // Home selected
+      case 0:
         currentNavBarImage = 'assets/images/navbar1.png';
         break;
-      case 1: // Scan selected
+      case 1:
         currentNavBarImage = 'assets/images/navbar2.png';
         break;
-      case 2: // Profile selected
+      case 2:
         currentNavBarImage = 'assets/images/navbar3.png';
         break;
       default:
-        currentNavBarImage = 'assets/images/navbar1.png'; // Default
+        currentNavBarImage = 'assets/images/navbar1.png';
     }
 
     return Container(
@@ -487,37 +508,29 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage(currentNavBarImage),
-          fit: BoxFit.cover, // Or BoxFit.fill, BoxFit.fitWidth
+          fit: BoxFit.cover,
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch, // Make InkWells fill height
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
             child: InkWell(
               onTap: () {
                 setState(() => _bottomNavIndex = 0);
               },
-              splashColor: Colors.white.withOpacity(
-                0.1,
-              ), // Optional visual feedback
+              splashColor: Colors.white.withOpacity(0.1),
               highlightColor: Colors.white.withOpacity(0.05),
-              child:
-                  Container(), // Empty container, tap area is the Expanded widget
+              child: Container(),
             ),
           ),
           Expanded(
             child: InkWell(
               onTap: () {
-                //setState(() => _bottomNavIndex = 1);
                 Navigator.push(
-                  // Or Navigator.push if you want 'back' functionality
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ScanPage(),
-                  ), // Navigate to your actual ScanPage
+                  MaterialPageRoute(builder: (context) => const ScanPage()),
                 );
               },
               splashColor: Colors.white.withOpacity(0.1),
@@ -528,13 +541,9 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: InkWell(
               onTap: () {
-                // setState(() => _bottomNavIndex = 2);
                 Navigator.push(
-                  // Or Navigator.push if you want 'back' functionality
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfilePage(),
-                  ), // Navigate to your actual ProfilePage
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
               splashColor: Colors.white.withOpacity(0.1),
