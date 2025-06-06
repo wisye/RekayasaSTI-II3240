@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Deployed version
+You can do the steps listed below or visit the following link to see the deployed version of this website.
+`http://103.59.160.119:3242/auth/login`
+
 ## Getting Started
 
 First, run the development server:
