@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'dart:math' as math; // For PI
+import 'package:provider/provider.dart';
 
+import 'dart:math' as math;
+import 'dart:io';
+import 'package:reksti_app/user_provider.dart';
+
+import 'package:reksti_app/services/token_service.dart';
+
+import 'package:reksti_app/screens/login_page.dart';
 import 'package:reksti_app/screens/home_page.dart';
 import 'package:reksti_app/screens/scan_page.dart';
+import 'package:reksti_app/screens/syarat_page.dart';
+import 'package:reksti_app/screens/privacy_page.dart';
+import 'package:reksti_app/screens/notification_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -14,32 +23,44 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  // Set initial index to 2 for Profile page
   int _bottomNavIndex = 2;
+
+  final TokenStorageService tokenStorage = TokenStorageService();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  Future<void> _triggerPickProfileImage() async {
+    await Provider.of<UserProvider>(
+      context,
+      listen: false,
+    ).pickAndSaveProfileImage();
+  }
 
   Widget _buildImagePlaceholder({
     double? width,
     double? height,
     IconData icon = Icons.image,
-    Color backgroundColor = const Color(0xFFE0E0E0), // Slightly darker grey
+    Color backgroundColor = const Color(0xFFE0E0E0),
     Color iconColor = const Color(0xFF9E9E9E),
   }) {
     double concreteIconSize;
 
-    // Determine a finite size for the icon
     if (width != null && width.isFinite && width > 0) {
-      concreteIconSize = width / 3.5; // Make icon smaller relative to width
+      concreteIconSize = width / 3.5;
     } else if (height != null && height.isFinite && height > 0) {
-      concreteIconSize = height / 3.5; // Or base it on height
+      concreteIconSize = height / 3.5;
     } else {
-      concreteIconSize = 24.0; // Default fallback size
+      concreteIconSize = 24.0;
     }
-    // Ensure the icon size is not excessively large if container is huge but unconstrained
-    concreteIconSize = math.min(concreteIconSize, 48.0); // Max icon size
-    concreteIconSize = math.max(16.0, concreteIconSize); // Min icon size
+
+    concreteIconSize = math.min(concreteIconSize, 48.0);
+    concreteIconSize = math.max(16.0, concreteIconSize);
 
     return Container(
-      width: width, // Container can still try to match the requested width
+      width: width,
       height: height,
       decoration: BoxDecoration(
         color: backgroundColor,
@@ -52,38 +73,41 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final topSafeAreaPadding = MediaQuery.of(context).padding.top;
 
-    return
-    // 3. Main Scaffold (Top Layer)
-    Container(
+    final userProvider = Provider.of<UserProvider>(context);
+
+    return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF1C4E4), Color(0xFFFFFFFF)],
-          stops: [0.4, 0.8],
+          colors: [Color(0xFFFAF4F5), Color(0xFFFFFFFF)],
         ),
       ),
       child: Scaffold(
-        backgroundColor: Colors.transparent, // To see the Stack background
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
         appBar: PreferredSize(
-          // Use PreferredSize to remove AppBar but keep height for status bar
           preferredSize: Size.fromHeight(0),
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            systemOverlayStyle:
-                SystemUiOverlayStyle.dark, // For status bar icons
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
           ),
         ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildProfileHeader(screenSize),
-                _buildProfileMenuList(),
-              ],
-            ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildProfileHeader(
+                screenSize,
+                topSafeAreaPadding,
+                userProvider.isLoadingProfile,
+                userProvider.profileRecipientName,
+                userProvider.profileRecipientAddress,
+                userProvider.profileImageFile,
+                userProvider.profileError,
+              ),
+              _buildProfileMenuList(userProvider),
+            ],
           ),
         ),
         bottomNavigationBar: _buildBottomNavigationBar(),
@@ -91,18 +115,42 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileHeader(Size screenSize) {
+  Widget _buildProfileHeader(
+    Size screenSize,
+    double topSafeArea,
+    bool isLoading,
+    String? recipientName,
+    String? recipientAddress,
+    File? profileImageFile,
+    String profileError,
+  ) {
+    String displayName =
+        isLoading && recipientName == null
+            ? ""
+            : (recipientName ?? "Nama tidak tersedia");
+    String displayAddress =
+        isLoading && recipientAddress == null
+            ? ""
+            : (recipientAddress ?? "Alamat tidak tersedia");
+    String avatarLetter =
+        isLoading || recipientName == null || recipientName.isEmpty
+            ? "X"
+            : recipientName[0].toUpperCase();
+
+    if (profileError.isNotEmpty && !isLoading) {
+      displayName = "Error";
+      displayAddress = "Gagal memuat data";
+    }
+
     return Stack(
       clipBehavior: Clip.none,
-      alignment: Alignment.center,
+
       children: [
-        // Banner Image
         Container(
-          height: screenSize.height * 0.22, // Adjust height as needed
+          height: screenSize.height * 0.22,
           width: double.infinity,
           child: Image.asset(
-            // IMPORTANT: Replace with your banner image
-            'assets/images/profile_banner.jpg',
+            'assets/images/profile_banner.png',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stacktrace) {
               return _buildImagePlaceholder(
@@ -113,56 +161,47 @@ class _ProfilePageState extends State<ProfilePage> {
             },
           ),
         ),
-        // Edit Icon Button
+
         Positioned(
-          top: 10,
-          right: 10,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.edit_outlined,
-                color: Colors.deepPurple[400],
-                size: 20,
-              ),
-              onPressed: () {
-                // TODO: Navigate to Edit Profile Page
-                print("Edit profile tapped");
-              },
-            ),
-          ),
-        ),
-        // Profile Avatar, Name, and Address
-        Positioned(
-          top:
-              screenSize.height * 0.22 -
-              50, // (Banner Height - Half of Avatar Height)
+          top: screenSize.height * 0.22 - 50,
+          left: 20,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
                 radius: 50,
-                backgroundColor: Colors.deepPurple[400], // Color from image
-                child: Text(
-                  'R', // Initial or from user data
-                  style: GoogleFonts.poppins(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                backgroundColor: Colors.deepPurple[400],
+                backgroundImage:
+                    profileImageFile != null && profileImageFile.existsSync()
+                        ? FileImage(profileImageFile)
+                        : null,
+                child:
+                    profileImageFile == null
+                        ? Text(
+                          avatarLetter,
+                          style: TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        )
+                        : null,
               ),
               const SizedBox(height: 12),
-              Text(
-                'Rs. Sadikin', // Replace with dynamic user name
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              if (isLoading && recipientName == null)
+                CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                )
+              else
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
-              ),
               const SizedBox(height: 6),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -174,14 +213,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(width: 4),
                   Flexible(
-                    // To prevent overflow if address is long
                     child: Text(
-                      'Jl. Pasteur No.38, Pasteur, Kec. Sukajadi,\nKota Bandung, Jawa Barat 40161', // Replace
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.grey[700],
-                      ),
+                      displayAddress,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                     ),
                   ),
                 ],
@@ -193,80 +228,131 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileMenuList() {
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: 70.0,
-        left: 20.0,
-        right: 20.0,
-        bottom: 20.0,
-      ), // Added top padding
-      child: Column(
-        children: [
-          _buildProfileMenuItem(
-            icon: Icons.notifications_none_outlined,
-            text: 'Notifikasi',
-            onTap: () {
-              // TODO: Navigate to Notifikasi page
-              print("Notifikasi tapped");
-            },
+  Widget _buildProfileMenuList(UserProvider userProvider) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            top: 145.0,
+            left: 20.0,
+            right: 20.0,
+            bottom: 20.0,
           ),
-          _buildProfileMenuItem(
-            icon: Icons.article_outlined, // Or a custom icon
-            text: 'Syarat dan Ketentuan',
-            onTap: () {
-              // TODO: Navigate to Syarat dan Ketentuan page
-              print("Syarat dan Ketentuan tapped");
-            },
-          ),
-          _buildProfileMenuItem(
-            icon: Icons.shield_outlined, // Or a custom icon
-            text: 'Privacy Policy',
-            onTap: () {
-              // TODO: Navigate to Privacy Policy page
-              print("Privacy Policy tapped");
-            },
-          ),
-          const SizedBox(height: 10), // Spacer
-          _buildProfileMenuItem(
-            icon: Icons.logout,
-            text: 'Keluar',
-            isLogout: true, // Special styling for logout
-            onTap: () {
-              // TODO: Implement logout functionality
-              print("Keluar tapped");
-              // Example: show confirmation dialog
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: Text("Konfirmasi Keluar"),
-                    content: Text("Apakah Anda yakin ingin keluar?"),
-                    actions: <Widget>[
-                      TextButton(
-                        child: Text("Batal"),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      TextButton(
-                        child: Text(
-                          "Keluar",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Close dialog
-                          // Perform logout action
-                        },
-                      ),
-                    ],
+          child: Column(
+            children: [
+              _buildProfileMenuItem(
+                icon: Icons.notifications_none_outlined,
+                text: 'Notifikasi',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationPage(),
+                    ),
                   );
                 },
-              );
-            },
+              ),
+              _buildProfileMenuItem(
+                icon: Icons.article_outlined,
+                text: 'Syarat dan Ketentuan',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SyaratPage()),
+                  );
+                },
+              ),
+              _buildProfileMenuItem(
+                icon: Icons.shield_outlined,
+                text: 'Privacy Policy',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PrivacyPage(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              _buildProfileMenuItem(
+                icon: Icons.logout,
+                text: 'Keluar',
+                isLogout: true,
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext dialogContext) {
+                      return AlertDialog(
+                        title: Text("Konfirmasi Keluar"),
+                        content: Text(
+                          "Apakah Anda yakin ingin log out dari aplikasi ?",
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text("Batal"),
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                            },
+                          ),
+                          TextButton(
+                            child: Text(
+                              "Keluar",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            onPressed: () async {
+                              Navigator.of(dialogContext).pop();
+
+                              await userProvider.clearProfileDataOnLogout();
+
+                              if (mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (context) => LoginPage(),
+                                  ),
+                                  (Route<dynamic> route) => false,
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.edit_outlined,
+                color: Colors.deepPurple[400],
+                size: 22,
+              ),
+              onPressed: () async {
+                await _triggerPickProfileImage();
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -276,86 +362,130 @@ class _ProfilePageState extends State<ProfilePage> {
     required VoidCallback onTap,
     bool isLogout = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      decoration: BoxDecoration(
-        color:
-            isLogout
-                ? Color(0xFFE8DAFF)
-                : Colors.white, // Light purple for logout, white for others
-        borderRadius: BorderRadius.circular(12.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
+    final double borderRadiusValue = 12.0;
+    final double borderWidth = 1.5;
+
+    final EdgeInsets contentPadding = const EdgeInsets.symmetric(
+      horizontal: 16.0,
+      vertical: 14.0,
+    );
+
+    Widget itemContent = Padding(
+      padding: contentPadding,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: isLogout ? Colors.deepPurple[700] : Colors.deepPurple[400],
+            size: 22,
           ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: isLogout ? Colors.deepPurple[700] : Colors.black87,
+              ),
+            ),
+          ),
+          if (!isLogout)
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
         ],
       ),
-      child: Material(
-        // Added Material for InkWell splash effect
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12.0),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 14.0,
+    );
+
+    if (isLogout) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFCBC6F0), Color(0xFFF1C4E4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(borderRadiusValue),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: Offset(0, 3),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color:
-                      isLogout
-                          ? Colors.deepPurple[600]
-                          : Colors.deepPurple[400],
-                  size: 22,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: isLogout ? Colors.deepPurple[700] : Colors.black87,
-                    ),
-                  ),
-                ),
-                if (!isLogout)
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.grey[400],
-                    size: 16,
-                  ),
-              ],
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(borderRadiusValue),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(borderRadiusValue),
+            child: itemContent,
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: EdgeInsets.all(borderWidth),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFCBC6F0), Color(0xFFF1C4E4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(borderRadiusValue),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(
+              borderRadiusValue - borderWidth,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(
+              borderRadiusValue - borderWidth,
+            ),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(
+                borderRadiusValue - borderWidth,
+              ),
+              child: itemContent,
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
 
-  // --- Reusing Bottom Navigation Bar from HomePage ---
   Widget _buildBottomNavigationBar() {
-    const double barHeight = 160; // Adjust to the actual height of your images
+    const double barHeight = 160;
     String currentNavBarImage;
 
     switch (_bottomNavIndex) {
-      case 0: // Home selected
+      case 0:
         currentNavBarImage = 'assets/images/navbar1.png';
         break;
-      case 1: // Scan selected
+      case 1:
         currentNavBarImage = 'assets/images/navbar2.png';
         break;
-      case 2: // Profile selected
+      case 2:
         currentNavBarImage = 'assets/images/navbar3.png';
         break;
       default:
-        currentNavBarImage = 'assets/images/navbar3.png'; // Default
+        currentNavBarImage = 'assets/images/navbar3.png';
     }
 
     return Container(
@@ -364,44 +494,32 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage(currentNavBarImage),
-          fit: BoxFit.cover, // Or BoxFit.fill, BoxFit.fitWidth
+          fit: BoxFit.cover,
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch, // Make InkWells fill height
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Expanded(
             child: InkWell(
               onTap: () {
-                // setState(() => _bottomNavIndex = 0);
                 Navigator.push(
-                  // Or Navigator.push if you want 'back' functionality
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(),
-                  ), // Navigate to your actual HomePage
+                  MaterialPageRoute(builder: (context) => const HomePage()),
                 );
               },
-              splashColor: Colors.white.withOpacity(
-                0.1,
-              ), // Optional visual feedback
+              splashColor: Colors.white.withOpacity(0.1),
               highlightColor: Colors.white.withOpacity(0.05),
-              child:
-                  Container(), // Empty container, tap area is the Expanded widget
+              child: Container(),
             ),
           ),
           Expanded(
             child: InkWell(
               onTap: () {
-                //setState(() => _bottomNavIndex = 1);
                 Navigator.push(
-                  // Or Navigator.push if you want 'back' functionality
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ScanPage(),
-                  ), // Navigate to your actual ScanPage
+                  MaterialPageRoute(builder: (context) => const ScanPage()),
                 );
               },
               splashColor: Colors.white.withOpacity(0.1),

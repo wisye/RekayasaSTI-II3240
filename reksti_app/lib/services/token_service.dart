@@ -9,7 +9,6 @@ class TokenStorageService {
   Future<void> saveToken(String token, String tokenType) async {
     await _storage.write(key: _accessTokenKey, value: token);
     await _storage.write(key: _tokenTypeKey, value: tokenType);
-    print("Token saved!");
   }
 
   Future<void> saveUsername(String username) async {
@@ -32,7 +31,5 @@ class TokenStorageService {
     await _storage.delete(key: _usernameKey);
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _tokenTypeKey);
-    // You can also use _storage.deleteAll() if you only store tokens here
-    print("Tokens deleted!");
   }
 }

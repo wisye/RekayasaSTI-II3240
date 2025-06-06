@@ -1,25 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:intl/intl.dart'; // For date formatting
+import 'package:intl/intl.dart';
 import 'package:reksti_app/model/Shipment.dart';
 import 'package:reksti_app/services/logic_service.dart';
 import 'package:reksti_app/Exception.dart';
 import 'package:reksti_app/services/token_service.dart';
 import 'package:reksti_app/screens/historidetail_page.dart';
-// http and dart:convert are removed as we are omitting API calls for this version
-
-// Model for an order item
-// class OrderItem {
-//   final String id;
-//   final String productName;
-//   final DateTime orderDate;
-
-//   OrderItem({
-//     required this.id,
-//     required this.productName,
-//     required this.orderDate,
-//   });
-// }
 
 class HistoriPesananPage extends StatefulWidget {
   const HistoriPesananPage({super.key});
@@ -36,8 +22,8 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
   final _logicService = LogicService();
 
   List<ShipmentItem> _ordersList = [];
-  bool _isLoading = false; // Changed from _isLoadingOrders
-  String _errorMessage = ''; // Changed from _orderErrorMessage
+  bool _isLoading = false;
+  String _errorMessage = '';
 
   final TokenStorageService tokenStorage = TokenStorageService();
 
@@ -47,10 +33,6 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
     if (_selectedDay == null) {
       _dateController.text = 'Choose Date';
     }
-    // Optionally, fetch orders for the initial selected day (e.g., today)
-    // _selectedDay = _focusedDay;
-    // _updateDateController(_selectedDay!);
-    // _fetchOrdersForDate(_selectedDay!);
   }
 
   @override
@@ -67,8 +49,6 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
     }
   }
 
-  // Simplified: This function will just update the date state.
-  // The actual date picker UI will be triggered by tapping the TextField.
   Future<void> _handleDateInputTap() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -79,9 +59,9 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
         return Theme(
           data: ThemeData.light().copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.deepPurple[300]!, // Header background color
-              onPrimary: Colors.white, // Header text color
-              onSurface: Colors.black87, // Body text color
+              primary: Colors.deepPurple[300]!,
+              onPrimary: Colors.white,
+              onSurface: Colors.black87,
             ),
             dialogBackgroundColor: Colors.white,
           ),
@@ -103,24 +83,8 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
     });
 
     try {
-      // --- REPLACE WITH YOUR ACTUAL SERVICE CALL ---
-      // final List<dynamic> rawShipmentData = await _logicService.getOrder(date);
-      // Note: You might need to pass the 'date' to your getOrder method
-      // For now, using the mock JSON structure you provided, filtered by the selected date conceptually.
-
-      print(
-        "Fetching orders for date: ${DateFormat('yyyy-MM-dd').format(date)}",
-      );
-      // This is where you'd call your actual _logicService.getOrder()
-      // The response should be List<dynamic> as per your JSON.
-
-      // Simulating what your _logicService.getOrder() might do,
-      // including the JSON structure and a slight delay.
-
       List<dynamic> rawShipmentData = await _logicService.getOrder();
 
-      // Filter mock data by the selected date (for simulation purposes)
-      // In a real scenario, your API would handle this filtering.
       final String formattedSelectedDate = DateFormat(
         'yyyy-MM-dd',
       ).format(date);
@@ -148,17 +112,13 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      print(
-        "Error fetching/processing orders for date ${DateFormat('yyyy-MM-dd').format(date)}: $e",
-      );
+
       setState(() {
         _errorMessage = "Gagal memuat pesanan: ${e.toString()}";
         _isLoading = false;
       });
     }
   }
-
-  // This function will now just load mock data based on the selected date
 
   void _onDateSelected(DateTime selectedDay, DateTime focusedDay) {
     if (!isSameDay(_selectedDay, selectedDay)) {
@@ -176,18 +136,15 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
     final screenSize = MediaQuery.of(context).size;
     return Stack(
       children: <Widget>[
-        // 1. Your Decorative Background Image (Bottom Layer of the root Stack)
-        Container(
-          color: Color(0xFFFFFFFF), // Your desired page background color
-        ),
+        Container(color: Color(0xFFFFFFFF)),
 
         Positioned(
           top: 0,
           left: 0,
           child: Opacity(
-            opacity: 0.5, // Adjust opacity as desired
+            opacity: 0.5,
             child: Image.asset(
-              'assets/images/home_img1.png', // YOUR DECORATIVE IMAGE PATH
+              'assets/images/home_img1.png',
               width: screenSize.width * 0.7,
               height: screenSize.height * 0.4,
               fit: BoxFit.contain,
@@ -199,14 +156,11 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
           ),
         ),
 
-        // 2. Scaffold is now a child of the Stack (Top Layer)
         Scaffold(
-          backgroundColor:
-              Colors.transparent, // Make Scaffold background transparent
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            backgroundColor:
-                Colors.transparent, // Make AppBar background transparent
-            elevation: 0, // Remove AppBar shadow
+            backgroundColor: Colors.transparent,
+            elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_new, color: Colors.black),
               onPressed: () => Navigator.of(context).pop(),
@@ -221,7 +175,6 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
             ),
           ),
           body: SafeArea(
-            // SafeArea for the main scrollable content
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20.0,
@@ -294,13 +247,7 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
                     shadowColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(
-                        // Use 'side' and provide a BorderSide
-                        color: Color(
-                          0xFFCBC6F0,
-                        ), // Example: Using the first color from your gradient
-                        width: 2.0, // You can adjust the border width
-                      ),
+                      side: BorderSide(color: Color(0xFFCBC6F0), width: 2.0),
                     ),
                     color: Colors.white,
                     child: Padding(
@@ -407,7 +354,6 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
 
   Widget _buildOrdersList() {
     if (_isLoading) {
-      // Changed from _isLoadingOrders
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(20.0),
@@ -416,7 +362,6 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
       );
     }
     if (_errorMessage.isNotEmpty) {
-      // Changed from _orderErrorMessage
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -481,13 +426,8 @@ class _HistoriPesananPageState extends State<HistoriPesananPage> {
           'Dipesan : ${DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(order.shippingDate)}',
           style: TextStyle(fontSize: 12, color: Colors.grey[700]),
         ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: Color(0xFF7B61FF),
-        ),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
         onTap: () {
-          // TODO: Navigate to order details page with order.id
           Navigator.push(
             context,
             MaterialPageRoute(

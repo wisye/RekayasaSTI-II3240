@@ -34,8 +34,16 @@ dependencies:
   table_calendar: ^3.2.0
   intl: ^0.20.2
   http: ^1.4.0
+  provider: ^6.0.0
   flutter_secure_storage: ^9.2.2 
+  shared_preferences: ^2.5.3
+  path_provider: ^2.1.5
+  path: ^1.9.1
   jwt_decoder: ^2.0.1         
+  image_picker: ^1.1.2
+  flutter_nfc_kit: ^3.4.2
+  ndef: ^0.3.4
+  encrypt: ^5.0.3
   
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

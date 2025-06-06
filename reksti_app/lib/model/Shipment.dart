@@ -24,7 +24,7 @@ class ShipmentItem {
     required this.recipientName,
     required this.recipientPhone,
     required this.status,
-    this.imagePath = 'assets/images/drug.png', // Default placeholder image
+    this.imagePath = 'assets/images/drug.png',
   });
 
   factory ShipmentItem.fromJson(
@@ -85,10 +85,7 @@ class Shipment {
     try {
       parsedShippingDate = DateTime.parse(dateString);
     } catch (e) {
-      print(
-        "Error parsing shipping_date: $dateString. Using current date as fallback.",
-      );
-      parsedShippingDate = DateTime.now(); // Fallback if parsing fails
+      parsedShippingDate = DateTime.now();
     }
 
     var itemsList = json['items'] as List;
@@ -122,4 +119,3 @@ class Shipment {
     );
   }
 }
-// --- End of Data Models ---

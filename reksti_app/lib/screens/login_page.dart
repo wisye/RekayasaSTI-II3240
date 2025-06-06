@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart'; // Make sure you have google_fonts in pubspec.yaml
-import 'dart:ui'; // For ImageFilter.blur
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:reksti_app/user_provider.dart';
+import 'dart:ui';
 import './register_page.dart';
 import './home_page.dart';
 import 'package:reksti_app/services/auth_service.dart';
@@ -16,8 +18,6 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Assuming AuthService is correctly defined and imported.
-  // If not, you might need to create a placeholder or ensure it's available.
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
@@ -26,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   void dispose() {
-    // Clean up the controllers when the widget is disposed.
     _usernameController.dispose();
     _passwordController.dispose();
 
@@ -34,15 +33,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (_isLoading) return; // Prevent multiple submissions
-    if (!mounted) return; // Check if the widget is still in the tree
+    if (_isLoading) return;
+    if (!mounted) return;
 
-    // Get values and trim where appropriate
     final String username = _usernameController.text.trim();
-    final String password =
-        _passwordController.text; // Don't trim password for validation/sending
+    final String password = _passwordController.text;
 
-    // --- Refined Validation ---
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -50,35 +46,25 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // --- End of Refined Validation ---
-
     setState(() {
       _isLoading = true;
     });
 
-    // print('Logging in user:');
-    // print('Username: $username');
-    // print(
-    //   'Password: $password',
-    // ); // Log raw password for debugging (consider removing in prduction)
-
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     try {
-      // Call AuthService with non-trimmed password
-      // Ensure your AuthService.registerUser method signature matches these arguments
-      await _authService.loginUser(
-        username, // Trimmed username
-        password, // Raw password
-      );
+      userProvider.clearProfileDataOnLogout();
+      await _authService.loginUser(username, password);
 
-      if (!mounted) return; // Check mounted again after await
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Login Successful!'),
-          duration: Duration(seconds: 1), // Show for a bit longer
+          duration: Duration(seconds: 1),
         ),
       );
-      // Navigate to login page, replacing the current route
+
+      userProvider.loadUserData();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
@@ -99,15 +85,12 @@ class _LoginPageState extends State<LoginPage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Network Error: ${e.message}')));
     } catch (e) {
-      if (!mounted) return; // Check mounted again after await
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login Failed: ${e.toString()}'),
-        ), // Use e.toString()
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login Failed: ${e.toString()}')));
     } finally {
       if (mounted) {
-        // Check mounted in finally block
         setState(() {
           _isLoading = false;
         });
@@ -124,28 +107,18 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        // The main decoration is now part of the Stack's base layer
-        // to allow aurora spots to be overlaid correctly.
+
         child: Stack(
-          // MODIFIED: Using Stack to layer aurora effect and content
           children: [
-            // Aurora Background Effect Layer
             Container(
               width: double.infinity,
               height: double.infinity,
-              decoration: const BoxDecoration(
-                // Base overall gradient for the purple theme
-                color: Color(0xFFC3A1FE),
-              ),
+              decoration: const BoxDecoration(color: Color(0xFFC3A1FE)),
               child: Stack(
-                // Inner stack for the aurora spots
                 children: [
-                  // Soft Spot 1 (Top-ish left)
                   Positioned(
-                    top: screenSize.height * 0.05, // Adjusted position
-                    left:
-                        screenSize.width *
-                        -0.1, // Slightly off-screen for softer edge
+                    top: screenSize.height * 0.05,
+                    left: screenSize.width * -0.1,
                     child: Container(
                       width: screenSize.width * 0.7,
                       height: screenSize.width * 0.7,
@@ -153,12 +126,8 @@ class _LoginPageState extends State<LoginPage> {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Colors.white.withOpacity(
-                              0.06,
-                            ), // Very subtle white/light glow
-                            Colors.white.withOpacity(
-                              0.0,
-                            ), // Fade to fully transparent
+                            Colors.white.withOpacity(0.06),
+                            Colors.white.withOpacity(0.0),
                           ],
                           radius: 0.5,
                         ),
@@ -166,10 +135,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  // Soft Spot 2 (Center-ish right)
                   Positioned(
-                    top: screenSize.height * 0.25, // Adjusted position
-                    right: screenSize.width * -0.15, // Slightly off-screen
+                    top: screenSize.height * 0.25,
+                    right: screenSize.width * -0.15,
                     child: Container(
                       width: screenSize.width * 0.8,
                       height: screenSize.width * 0.8,
@@ -177,9 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            Color(
-                              0xFFE1BEE7,
-                            ).withOpacity(0.08), // Very light lavender glow
+                            Color(0xFFE1BEE7).withOpacity(0.08),
                             Color(0xFFE1BEE7).withOpacity(0.0),
                           ],
                           radius: 0.5,
@@ -188,9 +154,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
 
-                  // Soft Spot 3 (Bottom-ish left)
                   Positioned(
-                    bottom: screenSize.height * 0.02, // Adjusted position
+                    bottom: screenSize.height * 0.02,
                     left: screenSize.width * 0.1,
                     child: Container(
                       width: screenSize.width * 0.9,
@@ -207,23 +172,15 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  // Optional: A subtle blur overlay to soften the spots more
+
                   BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: 50.0,
-                      sigmaY: 50.0,
-                    ), // Adjust blur intensity
-                    child: Container(
-                      color: Colors.black.withOpacity(
-                        0.0,
-                      ), // Needs a color to apply filter
-                    ),
+                    filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 50.0),
+                    child: Container(color: Colors.black.withOpacity(0.0)),
                   ),
                 ],
               ),
             ),
 
-            // Login Form Layer (original content)
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -236,31 +193,19 @@ class _LoginPageState extends State<LoginPage> {
                             MediaQuery.of(context).padding.bottom),
                   ),
                   child: Column(
-                    mainAxisAlignment:
-                        MainAxisAlignment
-                            .start, // To keep form elements starting from top of this column
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      // Spacing to push content below status bar and top of screen
                       SizedBox(height: MediaQuery.of(context).padding.top + 20),
 
                       Container(
-                        height:
-                            screenSize.height *
-                            0.20, // Adjusted height for the image
+                        height: screenSize.height * 0.20,
                         width: double.infinity,
-                        margin: const EdgeInsets.only(
-                          bottom: 15.0,
-                        ), // Added some margin
+                        margin: const EdgeInsets.only(bottom: 15.0),
                         child: Image.asset(
                           'assets/images/login_img.png',
-                          fit:
-                              BoxFit
-                                  .contain, // Changed to contain to see full image
+                          fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            print(
-                              "Error loading image 'assets/images/login_img.png': $error",
-                            );
                             return Container(
                               color: Colors.black.withOpacity(0.1),
                               child: const Column(
@@ -344,20 +289,15 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 25.0),
 
                       SizedBox(
-                        width:
-                            formElementWidth, // To align with the TextField below
+                        width: formElementWidth,
                         child: Align(
-                          alignment:
-                              Alignment.centerLeft, // Align text to the left
+                          alignment: Alignment.centerLeft,
                           child: Text(
-                            'Username', // Your desired label text
+                            'Username',
                             style: TextStyle(
-                              // Style the label as needed, e.g., make it match your theme
-                              // Ensure the color is visible on your frosted card background
                               color: Color(0xFF5C5A5A).withOpacity(0.9),
-                              fontWeight: FontWeight.w500, // Medium bold
-                              fontSize:
-                                  14.0, // Or use Theme.of(context).textTheme.labelLarge?.fontSize
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14.0,
                             ),
                           ),
                         ),
@@ -375,20 +315,15 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8.0),
 
                       SizedBox(
-                        width:
-                            formElementWidth, // To align with the TextField below
+                        width: formElementWidth,
                         child: Align(
-                          alignment:
-                              Alignment.centerLeft, // Align text to the left
+                          alignment: Alignment.centerLeft,
                           child: Text(
-                            'Password', // Your desired label text
+                            'Password',
                             style: TextStyle(
-                              // Style the label as needed, e.g., make it match your theme
-                              // Ensure the color is visible on your frosted card background
                               color: Color(0xFF5C5A5A).withOpacity(0.9),
-                              fontWeight: FontWeight.w500, // Medium bold
-                              fontSize:
-                                  14.0, // Or use Theme.of(context).textTheme.labelLarge?.fontSize
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14.0,
                             ),
                           ),
                         ),
@@ -417,26 +352,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8.0),
-
-                      SizedBox(
-                        width: formElementWidth,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              print('Forgot Password Tapped');
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: Color(0xFF5C5A5A),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 16.0),
 
                       SizedBox(
                         width: formElementWidth,
